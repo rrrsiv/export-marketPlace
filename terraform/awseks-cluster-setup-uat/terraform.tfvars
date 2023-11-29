@@ -1,0 +1,6 @@
+project = "emp"
+env = "uat"
+cluster_version = "1.26"
+vpc_id = "vpc-0e8b63a01995cc13a"
+subnet1_id = "subnet-0e02a6300e6a2ce39"
+subnet2_id = "subnet-0ea8f344692d1f569"

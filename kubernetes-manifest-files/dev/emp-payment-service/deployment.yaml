@@ -1,0 +1,46 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: backend
+  name: emp-payment-service
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: emp-payment-service
+  replicas: 2
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: emp-payment-service
+    spec:
+      containers:
+      - image: 656600766668.dkr.ecr.ap-south-1.amazonaws.com/emp-payment-service:893873a20230417092356
+        imagePullPolicy: Always
+        name: emp-payment-service
+        ports:
+        - containerPort: 8084
+        resources:
+          limits:
+            cpu: 750m
+            memory: 750Mi
+          requests:
+            cpu: 500m
+            memory: 500Mi
+        envFrom:
+        - configMapRef:
+            name: emp-payment-service-cm
+        - secretRef:
+            name: emp-payment-service-secret
+        livenessProbe:
+          httpGet:
+            path: /emp-payment-service/actuator/health
+            port: 8084
+          initialDelaySeconds: 90
+          periodSeconds: 30
+          timeoutSeconds: 30

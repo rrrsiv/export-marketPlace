@@ -1,0 +1,13 @@
+project = "emp"
+env = "prod"
+region = "ap-south-1"
+vpc_id = "vpc-0e8b63a01995cc13a"
+subnet1_id = "subnet-0e02a6300e6a2ce39"
+subnet2_id = "subnet-0ea8f344692d1f569"
+paymentCodebuildName = "payment-service"
+security_group_id = "sg-01ee7276c633760f0"
+sourceCodeUrl = "https://git-codecommit.ap-south-1.amazonaws.com/v1/repos/"
+payment_repo_name = "emp-payment-service"
+source_repo_branch = "refs/heads/main"
+repo_branch = "main"
+

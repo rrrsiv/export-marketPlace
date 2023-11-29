@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: emp-react-cm
+  namespace: frontend
+data:
+  REACT_APP_S3_BUCKET: emp-service-documents-uat
+  REACT_APP_REGION: ap-south-1
+  REACT_APP_API_ENDPOINT: https://uat.rivexa.com/
+
+ 
+  

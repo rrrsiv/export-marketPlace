@@ -1,0 +1,47 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: backend
+  name: emp-user-service
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: emp-user-service
+  replicas: 2
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: emp-user-service
+    spec:
+      containers:
+      - image: 656600766668.dkr.ecr.ap-south-1.amazonaws.com/emp-user-service-ecr:901e40b20230417062747
+        imagePullPolicy: Always
+        name: emp-user-service
+        ports:
+        - containerPort: 8081
+        resources:
+          limits:
+            cpu: 750m
+            memory: 750Mi
+          requests:
+            cpu: 500m
+            memory: 500Mi
+        envFrom:
+        - configMapRef:
+            name: emp-user-service-cm
+        - secretRef:
+            name: emp-user-service-secret
+        livenessProbe:
+          httpGet:
+            path: /emp-user-service/actuator
+            port: 8081
+          initialDelaySeconds: 90
+          periodSeconds: 30
+          timeoutSeconds: 30
+

@@ -1,0 +1,33 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: frontend
+  name: emp-react
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: emp-react
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: emp-react
+    spec:
+      containers:
+      - image: 656600766668.dkr.ecr.ap-south-1.amazonaws.com/emp-react-ecr:9a929ab20230412125605
+        imagePullPolicy: Always
+        name: emp-react
+        ports:
+        - containerPort: 88
+        resources:
+          limits:
+            cpu: 750m
+            memory: 750Mi
+          requests:
+            cpu: 500m
+            memory: 500Mi
+          envFrom:
+          - configMapRef:
+              name: emp-react-cm
+

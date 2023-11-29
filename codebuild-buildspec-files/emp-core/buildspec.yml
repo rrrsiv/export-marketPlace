@@ -1,0 +1,18 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      java: corretto11
+  pre_build:
+    commands:
+    - echo In the pre_build phase...
+    - cp ./settings.xml /root/.m2/settings.xml
+  build:
+    commands:
+    - echo Build started on `date`
+     - mvn clean install
+  post_build:
+    commands:
+    - echo Deploy completed on `date`
+    - export CODEARTIFACT_AUTH_TOKEN=`aws codeartifact get-authorization-token --domain exportmarketplace --domain-owner 656600766668 --query authorizationToken --output text`
+    - mvn deploy

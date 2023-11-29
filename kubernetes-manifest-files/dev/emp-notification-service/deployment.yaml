@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emp-notification-service
+  namespace: backend
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: emp-notification-service
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: emp-notification-service
+    spec:
+      containers:
+      - name: emp-notification-service
+        imagePullPolicy: Always
+        image: 656600766668.dkr.ecr.ap-south-1.amazonaws.com/emp-notification-service:0f4b07f20230428143507
+        ports:
+        - containerPort: 8085
+        resources:
+          limits:
+            cpu: 750m
+            memory: 750Mi
+          requests:
+            cpu: 500m
+            memory: 500Mi
+        envFrom:
+        - configMapRef:
+            name: emp-notification-service-cm
+        - secretRef:
+            name: emp-notification-service-secret
+        livenessProbe:
+          httpGet:
+            path: /emp-notification-service/actuator/health
+            port: 8085
+          initialDelaySeconds: 90
+          periodSeconds: 30
+          timeoutSeconds: 30
+

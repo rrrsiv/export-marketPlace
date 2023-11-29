@@ -1,0 +1,11 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: emp-seller-service
+  namespace: backend
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      run: emp-seller-service

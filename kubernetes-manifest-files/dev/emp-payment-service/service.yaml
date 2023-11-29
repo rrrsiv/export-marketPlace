@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: emp-payment-service
+  namespace: backend
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-port: '8084'
+    alb.ingress.kubernetes.io/healthcheck-path: /emp-payment-service/actuator/health
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8084
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: emp-payment-service

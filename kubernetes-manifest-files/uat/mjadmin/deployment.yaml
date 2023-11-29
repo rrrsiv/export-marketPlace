@@ -1,0 +1,32 @@
+---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      namespace: mjadmin
+      name: emp-react-mjadmin
+    spec:
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: emp-react-mjadmin
+      replicas: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: emp-react-mjadmin
+        spec:
+          containers:
+          - image: 656600766668.dkr.ecr.ap-south-1.amazonaws.com/emp-react-mjadmin:9dd0d2d20230808093613
+            imagePullPolicy: Always
+            name: emp-react-mjadmin
+            ports:
+            - containerPort: 88
+            resources:
+              limits:
+                cpu: 750m
+                memory: 750Mi
+              requests:
+                cpu: 500m
+                memory: 500Mi
+            envFrom:
+            - configMapRef:
+                name: emp-react-mjadmin-cm

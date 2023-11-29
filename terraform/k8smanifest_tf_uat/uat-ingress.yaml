@@ -1,0 +1,75 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: backend
+  name: emp-uat-ingress
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/inbound-cidrs: 10.128.0.0/16, 172.16.0.0/16, 10.132.80.45/32
+    alb.ingress.kubernetes.io/group.name: emp-app-uat-group
+    alb.ingress.kubernetes.io/actions.response-503: >
+      {"type":"fixed-response","fixedResponseConfig":{"contentType":"text/plain","statusCode":"200","messageBody":"you are reached to k8s ingress"}}
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths: 
+        - path: /emp-seller-service
+          pathType: Prefix
+          backend:
+            service:
+              name: emp-seller-service
+              port:
+                number: 80
+    - http:
+        paths: 
+        - path: /emp-user-service
+          pathType: Prefix
+          backend:
+            service:
+              name: emp-user-service
+              port:
+                number: 80
+    - http:
+        paths: 
+        - path: /emp-catalogue-service
+          pathType: Prefix
+          backend:
+            service:
+              name: emp-catalogue-service
+              port:
+                number: 80
+    - http:
+        paths: 
+        - path: /emp-rfq-service
+          pathType: Prefix
+          backend:
+            service:
+              name: emp-rfq-service
+              port:
+                number: 80
+    - http:
+        paths: 
+        - path: /emp-configuration-service
+          pathType: Prefix
+          backend:
+            service:
+              name: emp-configuration-service
+              port:
+                number: 80
+    - http:
+        paths: 
+        - path: /buyer
+          pathType: Prefix
+          backend:
+            service:
+              name: emp-buyer-service
+              port:
+                number: 80
+
+
+
+
+

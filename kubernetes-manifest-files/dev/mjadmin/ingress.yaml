@@ -1,0 +1,26 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: mjadmin
+  name: emp-react-mjadmin
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/inbound-cidrs: 10.128.0.0/16, 172.16.0.0/16, 10.132.80.45/32
+    alb.ingress.kubernetes.io/healthcheck-port: '88'
+    alb.ingress.kubernetes.io/group.name: emp-app-group
+
+spec:
+  ingressClassName: alb
+  rules:
+    - host: mjops-exportmarket-dev.mjunction.in
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: emp-react-mjadmin
+              port:
+                number: 80

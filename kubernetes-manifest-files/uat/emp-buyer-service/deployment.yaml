@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emp-buyer-service
+  namespace: backend
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: emp-buyer-service
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: emp-buyer-service
+    spec:
+      containers:
+      - name: emp-buyer-service
+        imagePullPolicy: Always
+        image: 656600766668.dkr.ecr.ap-south-1.amazonaws.com/emp-buyer-service:f0a593e20230505072602
+        ports:
+        - containerPort: 8087
+        resources:
+          limits:
+            cpu: 750m
+            memory: 750Mi
+          requests:
+            cpu: 500m
+            memory: 500Mi
+        envFrom:
+        - configMapRef:
+            name: emp-buyer-service-cm
+        - secretRef:
+            name: emp-buyer-service-secret
+        livenessProbe:
+          httpGet:
+            path: /buyer/actuator
+            port: 8087
+          initialDelaySeconds: 90
+          periodSeconds: 30
+          timeoutSeconds: 30
+

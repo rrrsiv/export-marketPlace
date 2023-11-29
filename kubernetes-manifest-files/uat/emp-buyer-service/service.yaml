@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: emp-buyer-service
+  namespace: backend
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-port: '8087'
+    alb.ingress.kubernetes.io/healthcheck-path: /buyer/actuator
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8087
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: emp-buyer-service
+

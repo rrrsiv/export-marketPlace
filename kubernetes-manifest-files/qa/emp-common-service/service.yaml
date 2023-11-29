@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: emp-catalogue-service
+  namespace: backend
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-port: '8082'
+    alb.ingress.kubernetes.io/healthcheck-path: /emp-catalogue-service/actuator
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8082
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: emp-catalogue-service

@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: emp-user-service
+  namespace: backend
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-port: '8081'
+    alb.ingress.kubernetes.io/healthcheck-path: /emp-user-service/actuator
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8081
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: emp-user-service
+

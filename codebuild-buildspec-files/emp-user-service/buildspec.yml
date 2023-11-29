@@ -1,0 +1,74 @@
+version: 0.2
+
+env:
+  git-credential-helper: yes
+  variables:
+    SERVICE_NAME: "emp-user-service"
+    AWS_REGION: "ap-south-1"
+    ECR_REGISTRY_URL: "656600766668.dkr.ecr.ap-south-1.amazonaws.com"
+    EKS_CLUSTER_NAME: "emp-dev-eks-cluster"
+    NAMESPACE: "backend"
+    CODECOMMIT_URL: "https://git-codecommit.ap-south-1.amazonaws.com/v1/repos/emp-devops"
+    SONAR_TOKEN: "squ_1ddd82b7a21cd17fbb5d6ecae6bd806663c46143"
+    
+phases:
+  install:
+    commands:
+      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+
+      - echo Installing kubectl...
+      - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+      - chmod +x kubectl
+      - mv kubectl /usr/local/bin/
+
+    runtime-versions:
+      java: corretto11
+  pre_build:
+    commands:
+      - apt-get update && apt install -y curl wget unzip
+      - cp ./settings.xml /root/.m2/settings.xml
+      - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID 
+      - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY 
+      - aws configure set default.region $AWS_REGION 
+      - export CODEARTIFACT_AUTH_TOKEN=`aws codeartifact get-authorization-token --domain exportmarketplace --domain-owner 656600766668 --query authorizationToken --output text`
+
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY_URL
+
+  build:
+    commands:
+      - cd emp-user-common
+      - echo Building JAR file...
+      - mvn clean install
+      - echo Deploy completed on `date`
+      - export CODEARTIFACT_AUTH_TOKEN=`aws codeartifact get-authorization-token --domain exportmarketplace --domain-owner 656600766668 --query authorizationToken --output text`
+      - mvn deploy
+    
+      - cd ../emp-user-service
+      - echo Building JAR file...
+      - mvn clean install
+      - echo Building Docker image...
+      - set -x
+      - echo Fetching latest commitID...
+      - git config --global --add safe.directory '*'
+      - commitId=$(git log -n1 --format="%h")
+      - date=$(date -u +"%Y%m%d%H%M%S")
+      - imageId=$commitId$date
+      - touch ~/imageId.txt && echo $imageId > ~/imageId.txt
+      - echo $imageId
+      - docker build -t emp-user-service-ecr .
+      - echo Tagging Docker image...
+      - docker tag emp-user-service-ecr:latest $ECR_REGISTRY_URL/$SERVICE_NAME-ecr:$imageId
+
+  post_build:
+    commands:
+      - echo Pushing Docker image to Amazon ECR...
+      - docker push $ECR_REGISTRY_URL/$SERVICE_NAME-ecr:$imageId
+      - echo $imageId
+      - IMAGE=$ECR_REGISTRY_URL/$SERVICE_NAME-ecr:$imageId
+      - echo $IMAGE
+      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
+      - echo updating user-service image tag 
+      - kubectl set image deployment/$SERVICE_NAME $SERVICE_NAME=$IMAGE -n $NAMESPACE
+

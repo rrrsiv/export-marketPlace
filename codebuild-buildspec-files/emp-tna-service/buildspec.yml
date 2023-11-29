@@ -1,0 +1,85 @@
+version: 0.2
+
+env:
+  git-credential-helper: yes
+  variables:
+    SERVICE_NAME: "emp-tna-service"
+    AWS_REGION: "ap-south-1"
+    ECR_REGISTRY_URL: "656600766668.dkr.ecr.ap-south-1.amazonaws.com"
+    EKS_CLUSTER_NAME: "emp-dev-eks-cluster"
+    NAMESPACE: "backend"
+
+phases:
+  install:
+    commands:
+      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+
+      - echo Installing kubectl...
+      - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+      - chmod +x kubectl
+      - mv kubectl /usr/local/bin/
+
+    runtime-versions:
+      java: corretto11
+  pre_build:
+    commands:
+      - apt-get update && apt install -y curl wget unzip
+      - cp ./settings.xml /root/.m2/settings.xml
+      - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID 
+      - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY 
+      - aws configure set default.region $AWS_REGION 
+      - export CODEARTIFACT_AUTH_TOKEN=`aws codeartifact get-authorization-token --domain exportmarketplace --domain-owner 656600766668 --query authorizationToken --output text`
+
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY_URL
+      
+      - echo "Installing SonarScanner CLI..."
+      - curl -L -o sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+      - unzip sonar-scanner.zip
+      - export PATH=$PATH:$PWD/sonar-scanner-4.6.2.2472-linux/bin
+      
+      - echo "Installing  jq tool"
+      - curl -L -o jq tool https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+      - export PATH=$PATH:$PWD/jq-linux64/bin
+
+  build:
+    commands:
+      - cd emp-tna-common
+      - echo Building JAR file...
+      - mvn clean install
+      - echo Deploy completed on `date`
+      - export CODEARTIFACT_AUTH_TOKEN=`aws codeartifact get-authorization-token --domain exportmarketplace --domain-owner 656600766668 --query authorizationToken --output text`
+      - mvn deploy
+    
+      - cd ../emp-tna-service
+      - echo Building JAR file...
+      - mvn clean install
+      - ls -la
+      - mvn sonar:sonar -Dsonar.projectKey=emp-tna-service -Dsonar.host.url=https://sonartest.mjunction.in/ -Dsonar.token=sqa_17c19df624d69c0eb68f5c6b3c17be8a758c08d6
+      - QUALITY_GATE_STATUS=$(curl -s -X GET -u "admin:Indianteam@1983" https://sonartest.mjunction.in/api/qualitygates/project_status?projectKey=emp-tna-service | jq -r '.projectStatus.status')
+      - if [ "$QUALITY_GATE_STATUS" != "OK" ]; then echo "SonarQube quality gate failed, stopping build process"; exit 1; fi; echo "SonarQube quality gate passed, continuing with the build process"
+
+      - echo Building Docker image...
+      - set -x
+      - echo Fetching latest commitID...
+      - git config --global --add safe.directory '*'
+      - commitId=$(git log -n1 --format="%h")
+      - date=$(date -u +"%Y%m%d%H%M%S")
+      - imageId=$commitId$date
+      - touch ~/imageId.txt && echo $imageId > ~/imageId.txt
+      - echo $imageId
+      - docker build -t emp-tna-service-ecr .
+      - echo Tagging Docker image...
+      - docker tag emp-tna-service-ecr:latest $ECR_REGISTRY_URL/$SERVICE_NAME:$imageId
+
+  post_build:
+    commands:
+      - echo Pushing Docker image to Amazon ECR...
+      - docker push $ECR_REGISTRY_URL/$SERVICE_NAME:$imageId
+      - echo $imageId
+      - IMAGE=$ECR_REGISTRY_URL/$SERVICE_NAME:$imageId
+      - echo $IMAGE
+      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
+      # - echo updating seller-service image tag 
+      # - kubectl set image deployment/$SERVICE_NAME $SERVICE_NAME=$IMAGE -n $NAMESPACE
